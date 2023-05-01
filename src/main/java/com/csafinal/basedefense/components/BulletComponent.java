@@ -43,8 +43,7 @@ public class BulletComponent extends Component {
         hp.damage(data.getDamage());
 
         if (hp.isZero()) {
-//            FXGL.<DropApp>getAppCast().onEnemyKilled(target);
-//            target.removeFromWorld();
+            target.removeFromWorld();
         }
     }
 }

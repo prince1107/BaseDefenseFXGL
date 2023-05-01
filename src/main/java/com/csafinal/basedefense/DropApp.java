@@ -26,33 +26,6 @@ import static com.almasb.fxgl.dsl.FXGL.*;
 public class DropApp extends GameApplication {
 
     List<String> levelNames = List.of(
-            "level2.json",
-            "level1.json",
-
-            // TODO: populate with actual levels
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
-            "level1.json",
-            "level2.json",
             "level1.json"
     );
 
@@ -77,7 +50,7 @@ public class DropApp extends GameApplication {
      * Types of entities in this game.
      */
         public enum Type {
-        BUILDING, ENEMY, PLAYER, TREE, STONE
+        BUILDING, ENEMY, PLAYER, TREE, STONE, BULLET
 
     }
 
@@ -85,7 +58,7 @@ public class DropApp extends GameApplication {
 
     private Entity player;
 
-    private List<TowerData> towerData;
+    private static List<TowerData> towerData;
 
     private PlayerComponent playerComponent;
 
@@ -94,7 +67,7 @@ public class DropApp extends GameApplication {
         // initialize common game / window settings.
         settings.setTitle("Zombs");
         settings.setVersion("1.0");
-        settings.setWidth(1000);
+        settings.setWidth(2000);
         settings.setHeight(1000);
     }
 
@@ -118,12 +91,16 @@ public class DropApp extends GameApplication {
     @Override
     protected void initGame() {
         getGameWorld().addEntityFactory(new gameFactory());
+        loadCurrentLevel();
+        loadTowerData();
+
         player = spawn("player");
 
         run(() -> spawn("enemy"), Duration.seconds(3));
         run(()-> spawn("building"), Duration.seconds(5));
 
         playerComponent = player.getComponent(PlayerComponent.class);
+        playerComponent.setPlayer(player);
 //        player.rota
 //        loopBGM("bgm.mp3");
 
@@ -131,15 +108,13 @@ public class DropApp extends GameApplication {
 
         // construct UI objects
 //        towerSelectionBox = new TowerSelectionBox(towerData);
-
-        loadCurrentLevel();
     }
     @Override
     protected void initInput(){
         getInput().addAction(new UserAction("Left"){
             @Override
             protected void onAction(){
-                player.getComponent(PlayerComponent.class).left();
+                playerComponent.left();
                 leftPress = true;
             }
             @Override
@@ -151,7 +126,7 @@ public class DropApp extends GameApplication {
         getInput().addAction(new UserAction("Right"){
             @Override
             protected void onAction(){
-                player.getComponent(PlayerComponent.class).right();
+                playerComponent.right();
                 rightPress = true;
             }
 
@@ -164,7 +139,7 @@ public class DropApp extends GameApplication {
         getInput().addAction(new UserAction("Down"){
             @Override
             protected void onAction(){
-                player.getComponent(PlayerComponent.class).down();
+                playerComponent.down();
                 downPress = true;
             }
             @Override
@@ -176,7 +151,7 @@ public class DropApp extends GameApplication {
         getInput().addAction(new UserAction("Up"){
             @Override
             protected void onAction(){
-                player.getComponent(PlayerComponent.class).up();
+                playerComponent.up();
                 upPress = true;
             }
 
@@ -189,23 +164,23 @@ public class DropApp extends GameApplication {
 
     @Override
     protected void initPhysics() {
-        onCollisionBegin(Type.BUILDING, Type.ENEMY, (bucket, droplet) -> {
+        onCollisionBegin(Type.BUILDING, Type.ENEMY, (building, enemy) -> {
 
             // code in this block is called when there is a collision between Type.BUCKET and Type.DROPLET
-            // remove the collided droplet from the game
-            droplet.removeFromWorld();
+            // remove the collided enemy from the game
+            enemy.removeFromWorld();
 
             // play a sound effect located in /resources/assets/sounds/
             play("drop.wav");
 
-            var hp = bucket.getComponent(HealthIntComponent.class);
+            var hp = building.getComponent(HealthIntComponent.class);
 
             System.out.println(hp.getValue());
             if (hp.getValue() > 1){
                 hp.damage(1);
                 return;
             }
-            bucket.removeFromWorld();
+            building.removeFromWorld();
 
         });
         onCollision(Type.PLAYER, Type.ENEMY, (player, enemy) -> {
@@ -213,6 +188,8 @@ public class DropApp extends GameApplication {
             play("drop.wav");
         });
     }
+
+
     private Point2D checkCollisionLocation(Entity thing1, Entity thing2){
         double xLoc = 0, yLoc = 0;
         if(thing1.getX()<thing2.getRightX()){
@@ -259,6 +236,10 @@ public class DropApp extends GameApplication {
                 .toList();
     }
 
+    public static TowerData getTower() {
+        return towerData.get(0);
+    }
+
     private void loadCurrentLevel() {
         setLevelFromMap("tmx/td1.tmx");
 
@@ -269,6 +250,7 @@ public class DropApp extends GameApplication {
                     });
                 });
     }
+
 
 //    public void onTowerSelected(Entity cell, TowerData data) {
 ////            towerSelectionBox.setVisible(false);
